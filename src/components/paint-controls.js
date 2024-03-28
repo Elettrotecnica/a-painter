@@ -1,5 +1,44 @@
 AFRAME.registerSystem('paint-controls', {
-  numberStrokes: 0
+  numberStrokes: 0,
+  tooltipFadeEvent: new Event('tooltip-fade'),
+  tooltipsDisplayed: false,
+
+  showTooltips: function (controllerName) {
+    if (this.tooltipsDisplayed) { return; }
+
+    for (const tooltipGroup of Utils.getTooltips(controllerName)) {
+      tooltipGroup.setAttribute('visible', true);
+      for (const tooltip of tooltipGroup.querySelectorAll('[tooltip]')) {
+        tooltip.setAttribute('animation', {
+	  dur: 1000,
+	  delay: 2000,
+	  property: 'tooltip.opacity',
+	  from: 1.0,
+	  to: 0.0,
+	  startEvents: 'tooltip-fade'
+	});
+	tooltip.addEventListener('animationcomplete', this.hideTooltipLine, {once: true});
+      }
+    }
+
+    this.tooltipsDisplayed = true;
+  },
+
+  hideTooltips: function () {
+    this.numberStrokes++;
+
+    // 3 Strokes to hide
+    if (this.numberStrokes === 3) {
+      for (const tooltip of document.querySelectorAll('[tooltip]')) {
+	tooltip.dispatchEvent(this.tooltipFadeEvent);
+      }
+    }
+  },
+
+  hideTooltipLine: function (evt) {
+    const line = evt.target.getObject3D('line');
+    if (line) { line.visible = false; }
+  }
 });
 
 /* globals AFRAME THREE */
@@ -201,7 +240,6 @@ AFRAME.registerComponent('paint-controls', {
       }
     }
 
-    tooltipGroups = Utils.getTooltips(controllerName);
     if (controllerName.indexOf('windows-motion') >= 0) {
       // this.el.setAttribute('teleport-controls', {button: 'trackpad'});
     } else if (controllerName === 'oculus-touch-controls') {
@@ -213,14 +251,7 @@ AFRAME.registerComponent('paint-controls', {
       this.el.setAttribute('gltf-model', 'url(assets/models/vive-controller.glb)');
     } else { return; }
 
-    if (!!tooltipGroups) {
-      for (const tooltipGroup of tooltipGroups) {
-        tooltipGroup.setAttribute('visible', true);
-	for (const tooltip of tooltipGroup.querySelectorAll('[tooltip]')) {
-          tooltip.setAttribute('animation', { dur: 1000, delay: 2000, property: 'tooltip.opacity', from: 1.0, to: 0.0, startEvents: 'tooltip-fade' });
-        }
-      }
-    }
+    this.system.showTooltips(controllerName);
 
     this.controller = controllerName;
   },
@@ -237,14 +268,8 @@ AFRAME.registerComponent('paint-controls', {
     if (evt.detail.entity.components['paint-controls'] !== this) { return; }
 
     this.numberStrokes++;
-    this.system.numberStrokes++;
 
-    // 3 Strokes to hide
-    if (this.system.numberStrokes === 3) {
-      for (const tooltip of tooltipGroup.querySelectorAll('[tooltip]')) {
-	tooltip.emit('tooltip-fade');
-      }
-    }
+    this.system.hideTooltips();
   },
 
   onButtonEvent: function (id, evtName) {
