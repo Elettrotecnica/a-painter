@@ -46,7 +46,11 @@ AFRAME.registerComponent('paint-controls', {
   dependencies: ['brush'],
 
   schema: {
-    hand: {default: 'left'}
+    hand: {default: 'left'},
+    tipModel: {
+      type: 'string',
+      default: '#tipObj'
+    }
   },
 
   init: function () {
@@ -80,12 +84,13 @@ AFRAME.registerComponent('paint-controls', {
     material.needsUpdate = true;
   },
 
-  createBrushTip: function (controllerVersion, hand) {
+  createBrushTip: function (controllerName, hand) {
     // Create brush tip and position it dynamically based on our current controller
     this.brushTip = document.createElement('a-entity');
     this.brushTip.id = `${hand}-tip`;
-    this.brushTip.setAttribute('gltf-model', '#tipObj');
-    this.brushTip.setAttribute('brush-tip', `controller: ${controllerVersion}; hand: ${hand}`);
+    this.brushTip.setAttribute('brush-tip', {
+      hand: hand, controller: controllerName, model: this.tipModel
+    });
     this.brushTip.addEventListener('model-loaded', this.onModelLoaded);
     this.el.appendChild(this.brushTip);
   },
@@ -121,11 +126,17 @@ AFRAME.registerComponent('paint-controls', {
   },
 
   update: function () {
-    var data = this.data;
-    var el = this.el;
-    el.setAttribute('vive-controls', {hand: data.hand, model: false});
-    el.setAttribute('oculus-touch-controls', {hand: data.hand, model: true});
-    el.setAttribute('windows-motion-controls', {hand: data.hand});
+    const controlConfiguration = {
+      hand: this.data.hand,
+      model: true
+    };
+
+    this.el.setAttribute('magicleap-controls', controlConfiguration);
+    this.el.setAttribute('vive-controls', controlConfiguration);
+    this.el.setAttribute('oculus-touch-controls', controlConfiguration);
+    this.el.setAttribute('pico-controls', controlConfiguration);
+    this.el.setAttribute('windows-motion-controls', controlConfiguration);
+    this.el.setAttribute('hp-mixed-reality-controls', controlConfiguration);
   },
 
   addEventListeners: function () {
@@ -232,25 +243,7 @@ AFRAME.registerComponent('paint-controls', {
     var controllerName = evt.detail.name;
     var hand = evt.detail.component.data.hand;
 
-    if (controllerName === 'windows-motion-controls') {
-      var gltfName = evt.detail.component.el.components['gltf-model'].data;
-      const SAMSUNG_DEVICE = '045E-065D';
-      if (!!gltfName && gltfName.indexOf(SAMSUNG_DEVICE) >= 0) {
-        controllerName = "windows-motion-samsung-controls";
-      }
-    }
-
-    if (controllerName.indexOf('windows-motion') >= 0) {
-      // this.el.setAttribute('teleport-controls', {button: 'trackpad'});
-    } else if (controllerName === 'oculus-touch-controls') {
-      const controllerModelURL = this.el.components[controllerName].displayModel[hand].modelUrl;
-      const versionMatchPattern = /[^\/]*(?=-(?:left|right)\.)/; // Matches the "oculus-touch-controller-[version]" part of URL
-      const controllerVersion = versionMatchPattern.exec(controllerModelURL)[0];
-      this.createBrushTip(controllerVersion, hand);
-    } else if (controllerName === 'vive-controls') {
-      this.el.setAttribute('gltf-model', 'url(assets/models/vive-controller.glb)');
-    } else { return; }
-
+    this.createBrushTip(controllerName, hand);
     this.system.showTooltips(controllerName);
 
     this.controller = controllerName;
