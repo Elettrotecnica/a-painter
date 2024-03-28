@@ -11,8 +11,6 @@ AFRAME.registerComponent('paint-controls', {
   },
 
   init: function () {
-    var el = this.el;
-    var self = this;
     var highLightTextureUrl = 'assets/images/controller-pressed.png';
     var tooltipGroups = null;
 
@@ -34,12 +32,23 @@ AFRAME.registerComponent('paint-controls', {
     this.onBrushColorChanged = this.onBrushColorChanged.bind(this);
     this.onStrokeStarted = this.onStrokeStarted.bind(this);
 
-    function createTexture (texture) {
-      var material = self.highLightMaterial = new THREE.MeshBasicMaterial();
-      material.map = texture;
-      material.needsUpdate = true;
-    }
-    el.sceneEl.systems.material.loadTexture(highLightTextureUrl, {src: highLightTextureUrl}, createTexture);
+    this.el.sceneEl.systems.material.loadTexture(highLightTextureUrl, {src: highLightTextureUrl}, this.createTexture.bind(this));
+  },
+
+  createTexture: function (texture) {
+    var material = this.highLightMaterial = new THREE.MeshBasicMaterial();
+    material.map = texture;
+    material.needsUpdate = true;
+  },
+
+  createBrushTip: function (controllerVersion, hand) {
+    // Create brush tip and position it dynamically based on our current controller
+    this.brushTip = document.createElement('a-entity');
+    this.brushTip.id = `${hand}-tip`;
+    this.brushTip.setAttribute('gltf-model', '#tipObj');
+    this.brushTip.setAttribute('brush-tip', `controller: ${controllerVersion}; hand: ${hand}`);
+    this.brushTip.addEventListener('model-loaded', this.onModelLoaded);
+    this.el.appendChild(this.brushTip);
   },
 
   changeBrushColor: function (color) {
@@ -184,16 +193,6 @@ AFRAME.registerComponent('paint-controls', {
     var controllerName = evt.detail.name;
     var hand = evt.detail.component.data.hand;
 
-    const createBrushTip = (controllerVersion, hand) => {
-      // Create brush tip and position it dynamically based on our current controller
-      this.brushTip = document.createElement('a-entity');
-      this.brushTip.id = `${hand}-tip`;
-      this.brushTip.setAttribute('gltf-model', '#tipObj');
-      this.brushTip.setAttribute('brush-tip', `controller: ${controllerVersion}; hand: ${hand}`);
-      this.brushTip.addEventListener('model-loaded', this.onModelLoaded);
-      this.el.appendChild(this.brushTip);
-    }
-
     if (controllerName === 'windows-motion-controls')
     {
       var gltfName = evt.detail.component.el.components['gltf-model'].data;
@@ -214,19 +213,18 @@ AFRAME.registerComponent('paint-controls', {
       const controllerModelURL = this.el.components[controllerName].displayModel[hand].modelUrl;
       const versionMatchPattern = /[^\/]*(?=-(?:left|right)\.)/; // Matches the "oculus-touch-controller-[version]" part of URL
       const controllerVersion = versionMatchPattern.exec(controllerModelURL)[0];
-      createBrushTip(controllerVersion, hand);
+      this.createBrushTip(controllerVersion, hand);
     } else if (controllerName === 'vive-controls') {
       this.el.setAttribute('gltf-model', 'url(assets/models/vive-controller.glb)');
     } else { return; }
 
     if (!!tooltipGroups) {
-      tooltipGroups.forEach(function (tooltipGroup) {
+      for (const tooltipGroup of tooltipGroups) {
         tooltipGroup.setAttribute('visible', true);
-        const tooltips = Array.prototype.slice.call(tooltipGroup.querySelectorAll('[tooltip]'));
-        tooltips.forEach(function (tooltip) {
+	for (const tooltip of tooltipGroup.querySelectorAll('[tooltip]')) {
           tooltip.setAttribute('animation', { dur: 1000, delay: 2000, property: 'tooltip.opacity', from: 1.0, to: 0.0, startEvents: 'tooltip-fade' });
-        });
-      });
+        }
+      }
     }
 
     this.controller = controllerName;
@@ -248,10 +246,9 @@ AFRAME.registerComponent('paint-controls', {
 
     // 3 Strokes to hide
     if (this.system.numberStrokes === 3) {
-      const tooltips = Array.prototype.slice.call(document.querySelectorAll('[tooltip]'));
-      tooltips.forEach(function (tooltip) {
-        tooltip.emit('tooltip-fade');
-      });
+      for (const tooltip of tooltipGroup.querySelectorAll('[tooltip]')) {
+	tooltip.emit('tooltip-fade');
+      }
     }
   },
 
