@@ -54,6 +54,10 @@ AFRAME.registerComponent('paint-controls', {
     tipModel: {
       type: 'string',
       default: '#tipObj'
+    },
+    tooltips: {
+      type: 'boolean',
+      default: true
     }
   },
 
@@ -248,7 +252,10 @@ AFRAME.registerComponent('paint-controls', {
     var hand = evt.detail.component.data.hand;
 
     this.createBrushTip(controllerName, hand);
-    this.system.showTooltips(controllerName);
+
+    if (this.data.tooltips) {
+      this.system.showTooltips(controllerName);
+    }
 
     this.controller = controllerName;
   },
@@ -266,7 +273,9 @@ AFRAME.registerComponent('paint-controls', {
 
     this.numberStrokes++;
 
-    this.system.hideTooltips();
+    if (this.data.tooltips) {
+      this.system.hideTooltips();
+    }
   },
 
   onButtonEvent: function (id, evtName) {
