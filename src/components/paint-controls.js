@@ -193,16 +193,11 @@ AFRAME.registerComponent('paint-controls', {
     var controllerName = evt.detail.name;
     var hand = evt.detail.component.data.hand;
 
-    if (controllerName === 'windows-motion-controls')
-    {
+    if (controllerName === 'windows-motion-controls') {
       var gltfName = evt.detail.component.el.components['gltf-model'].data;
       const SAMSUNG_DEVICE = '045E-065D';
-      if (!!gltfName)
-      {
-        if (gltfName.indexOf(SAMSUNG_DEVICE) >= 0)
-        {
-          controllerName = "windows-motion-samsung-controls";
-        }
+      if (!!gltfName && gltfName.indexOf(SAMSUNG_DEVICE) >= 0) {
+        controllerName = "windows-motion-samsung-controls";
       }
     }
 
