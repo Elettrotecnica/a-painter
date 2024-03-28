@@ -46,7 +46,11 @@ AFRAME.registerComponent('paint-controls', {
   dependencies: ['brush'],
 
   schema: {
-    hand: {default: 'left'},
+    hand: {
+      type: 'string',
+      oneOf: ['left', 'right'],
+      default: 'left'
+    },
     tipModel: {
       type: 'string',
       default: '#tipObj'
