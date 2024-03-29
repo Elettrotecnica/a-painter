@@ -58,6 +58,10 @@ AFRAME.registerComponent('paint-controls', {
     tooltips: {
       type: 'boolean',
       default: true
+    },
+    hideController: {
+      type: 'boolean',
+      default: false
     }
   },
 
@@ -180,12 +184,14 @@ AFRAME.registerComponent('paint-controls', {
 
   play: function () {
     this.addEventListeners();
-    this.setModelVisibility(true);
+    // If we hide the controller, do it now. If we don't, show it.
+    this.setModelVisibility(!this.data.hideController);
   },
 
   pause: function () {
     this.removeEventListeners();
-    this.setModelVisibility(false);
+    // If we hid the controller, show it again. If we didn't, hide it now.
+    this.setModelVisibility(this.data.hideController);
   },
 
   onEnterVR: function () {
