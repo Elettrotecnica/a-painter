@@ -4,7 +4,7 @@ AFRAME.registerComponent('brush', {
     color: {type: 'color', default: '#ef2d5e'},
     size: {default: 0.01, min: 0.001, max: 0.3},
     brush: {default: 'smooth'},
-    enabled: { default: true }
+    enabled: { type: 'boolean', default: true }
   },
   init: function () {
     var data = this.data;
@@ -26,37 +26,20 @@ AFRAME.registerComponent('brush', {
     this.model = this.el.getObject3D('mesh');
     this.drawing = false;
 
-    var self = this;
+    this.undoSoundEffect = document.getElementById('ui_undo');
+    this.paintSoundEffect = document.getElementById('ui_paint');
 
-    this.el.addEventListener('undo', function(evt) {
-      if (!self.data.enabled) { return; }
-      self.system.undo();
-      document.getElementById('ui_undo').play();
-    });
+    this.onUndo = this.onUndo.bind(this);
+    this.onPaint = this.onPaint.bind(this);
 
-    this.el.addEventListener('paint', function (evt) {
-      if (!self.data.enabled) { return; }
-      // Trigger
-      var value = evt.detail.value;
-      self.sizeModifier = value;
-      if (value > 0.1) {
-        if (!self.active) {
-          self.startNewStroke();
-          self.active = true;
-        }
-      } else {
-        if (self.active) {
-          self.previousEntity = self.currentEntity;
-          self.currentStroke = null;
-        }
-        self.active = false;
-      }
-    });
+    this.el.addEventListener('undo', this.onUndo);
+    this.el.addEventListener('paint', this.onPaint);
 
     this.hand = this.el.id === 'right-hand' ? 'right' : 'left';
   },
   update: function (oldData) {
     var data = this.data;
+
     if (oldData.color !== data.color) {
       this.color.set(data.color);
       this.el.emit('brushcolor-changed', {color: this.color});
@@ -79,8 +62,31 @@ AFRAME.registerComponent('brush', {
     };
   })(),
   startNewStroke: function () {
-    document.getElementById('ui_paint').play();
+    this.paintSoundEffect.play();
     this.currentStroke = this.system.addNewStroke(this.data.brush, this.color, this.data.size);
     this.el.emit('stroke-started', {entity: this.el, stroke: this.currentStroke});
+  },
+  onUndo: function (evt) {
+    if (!this.data.enabled) { return; }
+    this.system.undo();
+    this.undoSoundEffect.play();
+  },
+  onPaint: function (evt) {
+    if (!this.data.enabled) { return; }
+    // Trigger
+    var value = evt.detail.value;
+    this.sizeModifier = value;
+    if (value > 0.1) {
+      if (!this.active) {
+        this.startNewStroke();
+        this.active = true;
+      }
+    } else {
+      if (this.active) {
+        this.previousEntity = this.currentEntity;
+        this.currentStroke = null;
+      }
+      this.active = false;
+    }
   }
 });
