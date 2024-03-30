@@ -3,6 +3,7 @@ AFRAME.registerComponent('brush', {
   schema: {
     color: {type: 'color', default: '#ef2d5e'},
     size: {default: 0.01, min: 0.001, max: 0.3},
+    sizeModifier: {type: 'number', default: 0.0},
     brush: {default: 'smooth'},
     enabled: { type: 'boolean', default: true }
   },
@@ -13,13 +14,11 @@ AFRAME.registerComponent('brush', {
     this.el.emit('brushcolor-changed', {color: this.color});
     this.el.emit('brushsize-changed', {brushSize: data.size});
 
-    this.active = false;
     this.obj = this.el.object3D;
 
     this.currentStroke = null;
     this.strokeEntities = [];
 
-    this.sizeModifier = 0.0;
     this.textures = {};
     this.currentMap = 0;
 
@@ -40,6 +39,10 @@ AFRAME.registerComponent('brush', {
   update: function (oldData) {
     var data = this.data;
 
+    this.sizeModifier = this.data.sizeModifier;
+    if (oldData.sizeModifier !== this.data.sizeModifier) {
+      this.el.emit('paint', {value: this.sizeModifier});
+    }
     if (oldData.color !== data.color) {
       this.color.set(data.color);
       this.el.emit('brushcolor-changed', {color: this.color});
@@ -75,7 +78,7 @@ AFRAME.registerComponent('brush', {
     if (!this.data.enabled) { return; }
     // Trigger
     var value = evt.detail.value;
-    this.sizeModifier = value;
+    this.data.sizeModifier = this.sizeModifier = value;
     if (value > 0.1) {
       if (!this.active) {
         this.startNewStroke();
@@ -85,8 +88,8 @@ AFRAME.registerComponent('brush', {
       if (this.active) {
         this.previousEntity = this.currentEntity;
         this.currentStroke = null;
+	this.active = false;
       }
-      this.active = false;
     }
   }
 });
