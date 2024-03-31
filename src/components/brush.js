@@ -75,9 +75,8 @@ AFRAME.registerComponent('brush', {
     this.undoSoundEffect.play();
   },
   onPaint: function (evt) {
-    if (!this.data.enabled) { return; }
+    const value = this.data.enabled ? evt.detail.value : 0;
     // Trigger
-    var value = evt.detail.value;
     this.data.sizeModifier = this.sizeModifier = value;
     if (value > 0.1) {
       if (!this.active) {

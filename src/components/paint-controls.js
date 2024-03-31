@@ -186,12 +186,14 @@ AFRAME.registerComponent('paint-controls', {
     this.addEventListeners();
     // If we hide the controller, do it now. If we don't, show it.
     this.setModelVisibility(!this.data.hideController);
+    this.el.components.brush.data.enabled = true;
   },
 
   pause: function () {
     this.removeEventListeners();
     // If we hid the controller, show it again. If we didn't, hide it now.
     this.setModelVisibility(this.data.hideController);
+    this.el.components.brush.data.enabled = false;
   },
 
   onEnterVR: function () {
