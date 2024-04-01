@@ -5,6 +5,7 @@ AFRAME.registerComponent('brush', {
     size: {default: 0.01, min: 0.001, max: 0.3},
     sizeModifier: {type: 'number', default: 0.0},
     brush: {default: 'smooth'},
+    owner: {type: 'string', default: 'local'},
     enabled: { type: 'boolean', default: true }
   },
   init: function () {
@@ -65,7 +66,7 @@ AFRAME.registerComponent('brush', {
   })(),
   startNewStroke: function () {
     this.paintSoundEffect.play();
-    this.currentStroke = this.system.addNewStroke(this.data.brush, this.color, this.data.size);
+    this.currentStroke = this.system.addNewStroke(this.data.brush, this.color, this.data.size, this.data.owner);
     this.el.emit('stroke-started', {entity: this.el, stroke: this.currentStroke});
   },
   paint: function () {
@@ -83,9 +84,15 @@ AFRAME.registerComponent('brush', {
       }
     }
   },
+  undo: function() {
+    this.system.undo(this.data.owner);
+  },
+  clear: function() {
+    this.system.clear(this.data.owner);
+  },
   onUndo: function (evt) {
     if (!this.data.enabled) { return; }
-    this.system.undo();
+    this.undo();
     this.undoSoundEffect.play();
   },
   onPaint: function (evt) {

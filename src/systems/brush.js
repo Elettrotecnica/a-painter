@@ -149,10 +149,11 @@ AFRAME.registerSystem('brush', {
   getBrushByName: function (name) {
     return AFRAME.BRUSHES[name];
   },
-  undo: function () {
-  	var stroke;
+  undo: function (owner) {
+    var stroke;
+    owner = owner || 'local';
     for (var i = this.strokes.length - 1; i >= 0; i--) {
-      if (this.strokes[i].data.owner !== 'local') continue;
+      if (this.strokes[i].data.owner !== owner) continue;
       stroke = this.strokes.splice(i, 1)[0];
       break;
     }
@@ -183,10 +184,11 @@ AFRAME.registerSystem('brush', {
       this.strokes.splice(order, 1)[0].remove();
     }
   },
-  clear: function () {
+  clear: function (owner) {
     // Remove all the stroke entities
+    owner = owner || 'local';
     for (var i = this.strokes.length - 1; i >= 0; i--) {
-      if(this.strokes[i].data.owner !== 'local') continue;
+      if(this.strokes[i].data.owner !== owner) continue;
       var stroke = this.strokes[i];
       stroke.undo();
       var drawing = document.querySelector('.a-drawing');

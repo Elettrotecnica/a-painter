@@ -4,7 +4,7 @@ AFRAME.registerComponent('ui', {
     brightness: { default: 1.0, max: 1.0, min: 0.0 },
     opacity: { default: 0 }
   },
-  dependencies: ['ui-raycaster'],
+  dependencies: ['ui-raycaster', 'brush'],
 
   init: function () {
     var el = this.el;
@@ -250,7 +250,7 @@ AFRAME.registerComponent('ui', {
       }
       case name === 'clear': {
         if (!this.pressedObjects[name]) {
-          this.el.sceneEl.systems.brush.clear();
+          this.el.components.brush.clear();
           this.playSound('ui_click1');
         }
         break;
