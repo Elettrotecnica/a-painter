@@ -64,6 +64,9 @@ AFRAME.registerComponent('brush', {
       }
     };
   })(),
+  remove: function () {
+    this.clear();
+  },
   startNewStroke: function () {
     this.paintSoundEffect.play();
     this.currentStroke = this.system.addNewStroke(this.data.brush, this.color, this.data.size, this.data.owner);
