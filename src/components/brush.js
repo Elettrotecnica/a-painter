@@ -39,9 +39,8 @@ AFRAME.registerComponent('brush', {
   update: function (oldData) {
     var data = this.data;
 
-    this.sizeModifier = this.data.sizeModifier;
     if (oldData.sizeModifier !== this.data.sizeModifier) {
-      this.el.emit('paint', {value: this.sizeModifier});
+      this.paint();
     }
     if (oldData.color !== data.color) {
       this.color.set(data.color);
@@ -69,16 +68,9 @@ AFRAME.registerComponent('brush', {
     this.currentStroke = this.system.addNewStroke(this.data.brush, this.color, this.data.size);
     this.el.emit('stroke-started', {entity: this.el, stroke: this.currentStroke});
   },
-  onUndo: function (evt) {
-    if (!this.data.enabled) { return; }
-    this.system.undo();
-    this.undoSoundEffect.play();
-  },
-  onPaint: function (evt) {
-    const value = this.data.enabled ? evt.detail.value : 0;
-    // Trigger
-    this.data.sizeModifier = this.sizeModifier = value;
-    if (value > 0.1) {
+  paint: function () {
+    this.sizeModifier = this.data.enabled ? this.data.sizeModifier : 0;
+    if (this.sizeModifier > 0.1) {
       if (!this.active) {
         this.startNewStroke();
         this.active = true;
@@ -90,5 +82,15 @@ AFRAME.registerComponent('brush', {
 	this.active = false;
       }
     }
+  },
+  onUndo: function (evt) {
+    if (!this.data.enabled) { return; }
+    this.system.undo();
+    this.undoSoundEffect.play();
+  },
+  onPaint: function (evt) {
+    // Trigger
+    this.data.sizeModifier = evt.detail.value;
+    this.paint();
   }
 });
