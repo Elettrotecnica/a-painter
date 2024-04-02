@@ -1,6 +1,7 @@
 /* globals AFRAME THREE */
 AFRAME.registerComponent('brush', {
   schema: {
+    hand: {type: 'string', oneOf: ['left', 'right'], default: 'left'},
     color: {type: 'color', default: '#ef2d5e'},
     size: {default: 0.01, min: 0.001, max: 0.3},
     sizeModifier: {type: 'number', default: 0.0},
@@ -32,7 +33,11 @@ AFRAME.registerComponent('brush', {
     this.el.addEventListener('undo', this.onUndo);
     this.el.addEventListener('paint', this.onPaint);
 
-    this.hand = this.el.id === 'right-hand' ? 'right' : 'left';
+    if (this.data.hand === null) {
+      this.hand = this.el.id.endsWith('right-hand') ? 'right' : 'left';
+    } else {
+      this.hand = this.data.hand;
+    }
   },
   update: function (oldData) {
     var data = this.data;
