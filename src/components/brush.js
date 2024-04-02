@@ -26,9 +26,6 @@ AFRAME.registerComponent('brush', {
     this.model = this.el.getObject3D('mesh');
     this.drawing = false;
 
-    this.undoSoundEffect = document.getElementById('ui_undo');
-    this.paintSoundEffect = document.getElementById('ui_paint');
-
     this.onUndo = this.onUndo.bind(this);
     this.onPaint = this.onPaint.bind(this);
 
@@ -68,7 +65,7 @@ AFRAME.registerComponent('brush', {
     this.clear();
   },
   startNewStroke: function () {
-    this.paintSoundEffect.play();
+    this.el.components.ui?.playSound('ui_paint');
     this.currentStroke = this.system.addNewStroke(this.data.brush, this.color, this.data.size, this.data.owner);
     this.el.emit('stroke-started', {entity: this.el, stroke: this.currentStroke});
   },
@@ -96,7 +93,7 @@ AFRAME.registerComponent('brush', {
   onUndo: function (evt) {
     if (!this.data.enabled) { return; }
     this.undo();
-    this.undoSoundEffect.play();
+    this.el.components.ui?.playSound('ui_undo');
   },
   onPaint: function (evt) {
     // Trigger
