@@ -535,10 +535,10 @@ AFRAME.registerComponent('ui', {
     }
 
     el.addEventListener('model-loaded', this.onModelLoaded);
-    el.addEventListener('raycaster-intersection', this.onIntersection);
-    el.addEventListener('raycaster-intersection-cleared', this.onIntersectionCleared);
-    el.addEventListener('raycaster-intersected', this.onIntersected);
-    el.addEventListener('raycaster-intersected-cleared', this.onIntersectedCleared);
+    el.addEventListener('ui-raycaster-intersection', this.onIntersection);
+    el.addEventListener('ui-raycaster-intersection-cleared', this.onIntersectionCleared);
+    el.addEventListener('ui-raycaster-intersected', this.onIntersected);
+    el.addEventListener('ui-raycaster-intersected-cleared', this.onIntersectedCleared);
     if (!handEl) { return; }
     this.addHandListeners();
   },
@@ -551,10 +551,10 @@ AFRAME.registerComponent('ui', {
       this.removeToggleEvent();
     }
 
-    el.removeEventListener('raycaster-intersection', this.onIntersection);
-    el.removeEventListener('raycaster-intersection-cleared', this.onIntersectionCleared);
-    el.removeEventListener('raycaster-intersected', this.onIntersected);
-    el.removeEventListener('raycaster-intersected-cleared', this.onIntersectedCleared);
+    el.removeEventListener('ui-raycaster-intersection', this.onIntersection);
+    el.removeEventListener('ui-raycaster-intersection-cleared', this.onIntersectionCleared);
+    el.removeEventListener('ui-raycaster-intersected', this.onIntersected);
+    el.removeEventListener('ui-raycaster-intersected-cleared', this.onIntersectedCleared);
     if (!handEl) { return; }
     this.removeHandListeners();
   },

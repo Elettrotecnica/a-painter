@@ -111,12 +111,12 @@ AFRAME.registerComponent('ui-raycaster', {
     // Emit intersected on intersected entity per intersected entity.
     intersections.forEach(function emitEvents (intersection) {
       var intersectedEl = intersection.object.el;
-      intersectedEl.emit('raycaster-intersected', {el: el, intersection: intersection});
+      intersectedEl.emit('ui-raycaster-intersected', {el: el, intersection: intersection});
     });
 
     // Emit all intersections at once on raycasting entity.
     if (intersections.length) {
-      el.emit('raycaster-intersection', {
+      el.emit('ui-raycaster-intersection', {
         els: intersectedEls,
         intersections: intersections
       });
@@ -125,8 +125,8 @@ AFRAME.registerComponent('ui-raycaster', {
     // Emit intersection cleared on both entities per formerly intersected entity.
     prevIntersectedEls.forEach(function checkStillIntersected (intersectedEl) {
       if (intersectedEls.indexOf(intersectedEl) !== -1) { return; }
-      el.emit('raycaster-intersection-cleared', {el: intersectedEl});
-      intersectedEl.emit('raycaster-intersected-cleared', {el: el});
+      el.emit('ui-raycaster-intersection-cleared', {el: intersectedEl});
+      intersectedEl.emit('ui-raycaster-intersected-cleared', {el: el});
     });
   },
 
