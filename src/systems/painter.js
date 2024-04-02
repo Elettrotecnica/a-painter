@@ -72,6 +72,7 @@ AFRAME.registerSystem('painter', {
       }
       return urlParams;
     }
+
     var urlParams = getUrlParams();
     // Support cameras defined as primitives, or as entities with the
     // camera component.
@@ -79,9 +80,9 @@ AFRAME.registerSystem('painter', {
     if (urlParams.url || urlParams.urljson) {
       var isBinary = urlParams.urljson === undefined;
       this.brushSystem.loadFromUrl(urlParams.url || urlParams.urljson, isBinary);
-      document.getElementById('logo').setAttribute('visible', false);
+      document.getElementById('logo')?.setAttribute('visible', false);
       cameraEl.setAttribute('orbit-controls', 'initialPosition: 0 1.6 3');
-      document.getElementById('apainter-logo').classList.remove('hidden');
+      document.getElementById('apainter-logo')?.classList.remove('hidden');
       //document.getElementById('apainter-author').classList.remove('hidden'); // not used yet
     } else { // No painting to load, move camera in front of logo
       cameraEl.setAttribute('position', '0 1.6 0');
@@ -114,7 +115,7 @@ AFRAME.registerSystem('painter', {
     document.addEventListener('stroke-started', function (event) {
       if (!self.paintingStarted) {
         const logoEl = document.getElementById('logo');
-        logoEl.emit('painting-started');
+        logoEl?.emit('painting-started');
         self.paintingStarted = true;
       }
     });
