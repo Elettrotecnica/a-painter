@@ -51,6 +51,10 @@ AFRAME.registerComponent('paint-controls', {
       oneOf: ['left', 'right'],
       default: 'left'
     },
+    controller: {
+      type: 'string',
+      default: 'auto'
+    },
     tipModel: {
       type: 'string',
       default: '#tipObj'
@@ -77,7 +81,6 @@ AFRAME.registerComponent('paint-controls', {
 
     this.el.object3D.visible = false;
 
-    this.onEnterVR = this.onEnterVR.bind(this);
     this.onModelLoaded = this.onModelLoaded.bind(this);
     this.onChangeBrushSizeAbs = this.onChangeBrushSizeAbs.bind(this);
     this.onChangeBrushSizeInc = this.onChangeBrushSizeInc.bind(this);
@@ -86,6 +89,10 @@ AFRAME.registerComponent('paint-controls', {
     this.onBrushSizeChanged = this.onBrushSizeChanged.bind(this);
     this.onBrushColorChanged = this.onBrushColorChanged.bind(this);
     this.onStrokeStarted = this.onStrokeStarted.bind(this);
+
+    if (this.data.controller !== 'auto') {
+      this.setController(this.data.controller, this.data.hand);
+    }
 
     this.el.sceneEl.systems.material.loadTexture(highLightTextureUrl, {src: highLightTextureUrl}, this.createTexture.bind(this));
   },
@@ -152,7 +159,6 @@ AFRAME.registerComponent('paint-controls', {
   },
 
   addEventListeners: function () {
-    this.el.sceneEl.addEventListener('enter-vr', this.onEnterVR);
     this.el.addEventListener('model-loaded', this.onModelLoaded);
     this.el.addEventListener('changeBrushSizeAbs', this.onChangeBrushSizeAbs);
     this.el.addEventListener('changeBrushSizeInc', this.onChangeBrushSizeInc);
@@ -164,7 +170,6 @@ AFRAME.registerComponent('paint-controls', {
   },
 
   removeEventListeners: function () {
-    this.el.sceneEl.removeEventListener('enter-vr', this.onEnterVR);
     this.el.removeEventListener('model-loaded', this.onModelLoaded);
     this.el.removeEventListener('changeBrushSizeAbs', this.onChangeBrushSizeAbs);
     this.el.removeEventListener('changeBrushSizeInc', this.onChangeBrushSizeInc);
@@ -175,32 +180,47 @@ AFRAME.registerComponent('paint-controls', {
     document.removeEventListener('stroke-started', this.onStrokeStarted);
   },
 
-  setModelVisibility: function (visible) {
-    const mesh = this.el.getObject3D('mesh');
-    if (mesh) {
-      mesh.visible = !!visible;
+  setModelVisibility: function () {
+    const visible = this.isPlaying ? !this.data.hideController : this.data.hideController;
+    this.controllerModel = this.el.getObject3D('mesh');
+    if (this.controllerModel) {
+      this.controllerModel.visible = visible;
     }
+  },
+
+  setController: function (controllerName, hand) {
+    if (this.controller) { return; }
+    this.createBrushTip(controllerName, hand);
+
+    if (this.data.tooltips) {
+      this.system.showTooltips(controllerName);
+    }
+
+    this.controller = this.data.controller = controllerName;
+    this.el.object3D.visible = true;
   },
 
   play: function () {
     this.addEventListeners();
-    // If we hide the controller, do it now. If we don't, show it.
-    this.setModelVisibility(!this.data.hideController);
+    this.isPlaying = true;
+    this.setModelVisibility();
     this.el.components.brush.data.enabled = true;
   },
 
   pause: function () {
     this.removeEventListeners();
-    // If we hid the controller, show it again. If we didn't, hide it now.
-    this.setModelVisibility(this.data.hideController);
+    this.isPlaying = false;
+    this.setModelVisibility();
     this.el.components.brush.data.enabled = false;
   },
 
-  onEnterVR: function () {
-    this.el.object3D.visible = true;
-  },
-
   onModelLoaded: function (evt) {
+    if (!this.controllerModel) {
+      // If the controller model is loaded after our initialization,
+      // set its visibility now.
+      this.setModelVisibility();
+    }
+
     // Only act on lone brush tip or custom model to set the button meshes, ignore anything else.
     if ((evt.target !== this.el && !evt.target.id.includes('-tip')) || this.buttonMeshes) { return; }
 
@@ -258,14 +278,7 @@ AFRAME.registerComponent('paint-controls', {
   onControllerconnected: function (evt) {
     var controllerName = evt.detail.name;
     var hand = evt.detail.component.data.hand;
-
-    this.createBrushTip(controllerName, hand);
-
-    if (this.data.tooltips) {
-      this.system.showTooltips(controllerName);
-    }
-
-    this.controller = controllerName;
+    this.setController(controllerName, hand);
   },
 
   onBrushSizeChanged: function (evt) {
