@@ -11,12 +11,12 @@ AFRAME.registerBrush = function (name, definition, options) {
   var proto = {};
 
   // Format definition object to prototype object.
-  Object.keys(definition).forEach(function (key) {
+  for (const key in definition) {
     proto[key] = {
       value: definition[key],
       writable: true
     };
-  });
+  }
 
   if (AFRAME.BRUSHES[name]) {
     throw new Error('The brush `' + name + '` has been already registered. ' +
@@ -196,20 +196,19 @@ AFRAME.registerSystem('brush', {
     }
 
     // Reset the used brushes
-    Object.keys(AFRAME.BRUSHES).forEach(function (name) {
+    for (const name in AFRAME.BRUSHES) {
       AFRAME.BRUSHES[name].used = false;
-    });
+    }
 
-    this.strokes = [];
+    this.strokes.length = 0;
   },
   init: function () {
     this.version = VERSION;
     this.clear();
   },
   tick: function (time, delta) {
-    if (!this.strokes.length) { return; }
-    for (var i = 0; i < this.strokes.length; i++) {
-      this.strokes[i].tick(time, delta);
+    for (const stroke of this.strokes) {
+      stroke.tick(time, delta);
     }
   },
   generateTestLines: function () {
