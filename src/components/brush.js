@@ -1,13 +1,14 @@
 /* globals AFRAME THREE */
 AFRAME.registerComponent('brush', {
   schema: {
-    hand: {type: 'string', oneOf: ['left', 'right'], default: 'left'},
+    hand: {type: 'string', oneOf: ['left', 'right', ''], default: ''},
     color: {type: 'color', default: '#ef2d5e'},
     size: {default: 0.01, min: 0.001, max: 0.3},
     sizeModifier: {type: 'number', default: 0.0},
     brush: {default: 'smooth'},
     owner: {type: 'string', default: 'local'},
-    enabled: { type: 'boolean', default: true }
+    enabled: { type: 'boolean', default: true },
+    undo: {type: 'int', default: 0}
   },
   init: function () {
     var data = this.data;
@@ -33,7 +34,7 @@ AFRAME.registerComponent('brush', {
     this.el.addEventListener('undo', this.onUndo);
     this.el.addEventListener('paint', this.onPaint);
 
-    if (this.data.hand === null) {
+    if (this.data.hand === '') {
       this.hand = this.el.id.endsWith('right-hand') ? 'right' : 'left';
     } else {
       this.hand = this.data.hand;
@@ -41,6 +42,14 @@ AFRAME.registerComponent('brush', {
   },
   update: function (oldData) {
     var data = this.data;
+
+    // The undo property is useful on remote brushes: these will
+    // receive the message to undo from the network, rather than
+    // actual UI events.
+    while (this.data.undo > 0) {
+      this.undo();
+      this.data.undo--;
+    }
 
     if (oldData.sizeModifier !== this.data.sizeModifier) {
       this.paint();
