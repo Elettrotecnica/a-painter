@@ -304,28 +304,18 @@ AFRAME.registerComponent('ui', {
     var pressedObjects = this.pressedObjects;
     var unpressedObjects = this.unpressedObjects;
     this.activeWidget = undefined;
-    Object.keys(pressedObjects).forEach(function (key) {
-      var buttonName = pressedObjects[key].name;
-      switch (true) {
-        case buttonName === 'size': {
-          // self.onBrushSizeUp();
-          break;
-        }
-        default: {
-          break;
-        }
-      }
+    for (const key in pressedObjects) {
+      const buttonName = pressedObjects[key].name;
       unpressedObjects[buttonName] = pressedObjects[buttonName];
       delete pressedObjects[buttonName];
-    });
+    }
   },
 
   handlePressedButtons: function () {
-    var self = this;
     if (!this.triggeredPressed) { return; }
-    this.hoveredOnObjects.forEach(function triggerAction (button) {
-      self.handleButtonDown(button.object, button.point);
-    });
+    for (const button of this.hoveredOnObjects) {
+      this.handleButtonDown(button.object, button.point);
+    }
   },
 
   onColorHistoryButtonDown: function (object) {
@@ -462,60 +452,65 @@ AFRAME.registerComponent('ui', {
   },
 
   updateHoverObjects: function () {
-    var intersectedObjects = this.intersectedObjects;
-    intersectedObjects = intersectedObjects.filter(function (obj) {
-      return obj.object.name !== 'bb' && obj.object.name !== 'msg_save';
-    });
-    this.hoveredOffObjects = this.hoveredOnObjects.filter(function (obj) {
-      return intersectedObjects.indexOf(obj) === -1;
-    });
-    this.hoveredOnObjects = intersectedObjects;
+    this.hoveredOffObjects.length = 0;
+    for (const obj of this.hoveredOnObjects) {
+      if (this.intersectedObjects.indexOf(obj) === -1) {
+        this.hoveredOffObjects.push(obj);
+      }
+    }
+
+    this.hoveredOnObjects.length = 0;
+    for (const obj of this.intersectedObjects) {
+      if (obj.object.name !== 'bb' && obj.object.name !== 'msg_save') {
+        this.hoveredOnObjects.push(obj);
+      }
+    }
   },
 
   updateMaterials: (function () {
     var point = new THREE.Vector3();
     return function () {
-      var self = this;
       var pressedObjects = this.pressedObjects;
       var unpressedObjects = this.unpressedObjects;
       var selectedObjects = this.selectedObjects;
       // Remove hover highlights
-      this.hoveredOffObjects.forEach(function (obj) {
-        var object = obj.object;
-        object.material = self.highlightMaterials[object.name].normal;
-      });
+      for (const obj of this.hoveredOffObjects) {
+        const object = obj.object;
+        object.material = this.highlightMaterials[object.name].normal;
+      }
       // Add highlight to newly intersected objects
-      this.hoveredOnObjects.forEach(function (obj) {
-        var object = obj.object;
+      for (const obj of this.hoveredOnObjects) {
+        const object = obj.object;
         point.copy(obj.point);
-        if (!self.highlightMaterials[object.name]) {
-          self.initHighlightMaterial(object);
+        if (!this.highlightMaterials[object.name]) {
+          this.initHighlightMaterial(object);
         }
         // Update ray
-        self.handRayEl.object3D.worldToLocal(point);
-        self.handRayEl.setAttribute('line', 'end', point);
-        object.material = self.highlightMaterials[object.name].hover;
-      });
+        this.handRayEl.object3D.worldToLocal(point);
+        this.handRayEl.setAttribute('line', 'end', point);
+        object.material = this.highlightMaterials[object.name].hover;
+      }
       // Pressed Material
-      Object.keys(pressedObjects).forEach(function (key) {
-        var object = pressedObjects[key];
-        var materials = self.highlightMaterials[object.name];
+      for (const key in pressedObjects) {
+        const object = pressedObjects[key];
+        const materials = this.highlightMaterials[object.name];
         object.material = materials.pressed || object.material;
-      });
+      }
       // Unpressed Material
-      Object.keys(unpressedObjects).forEach(function (key) {
-        var object = unpressedObjects[key];
-        var materials = self.highlightMaterials[object.name];
+      for (const key in unpressedObjects) {
+        const object = unpressedObjects[key];
+        const materials = this.highlightMaterials[object.name];
         object.material = materials.normal;
         delete unpressedObjects[key];
-      });
+      }
       // Selected material
-      Object.keys(selectedObjects).forEach(function (key) {
-        var object = selectedObjects[key];
-        var materials = self.highlightMaterials[object.name];
-        if (!materials) { return; }
-        object.material = materials.selected;
-      });
+      for (const key in selectedObjects) {
+        const object = selectedObjects[key];
+        const materials = this.highlightMaterials[object.name];
+        if (materials) {
+          object.material = materials.selected;
+        }
+      }
     };
   })(),
 
@@ -780,13 +775,12 @@ AFRAME.registerComponent('ui', {
     this.closed = false;
 
     if (!!this.tooltips) {
-      var self = this;
-      this.tooltips.forEach(function (tooltip) {
+      for (const tooltip of this.tooltips) {
         if (tooltip.getAttribute('visible') && uiEl.parentEl.id !== tooltip.parentEl.id) {
-          self.isTooltipPaused = true;
+          this.isTooltipPaused = true;
           tooltip.setAttribute('visible', false);
         }
-      });
+      }
     }
     this.playSound('ui_menu');
   },
@@ -795,7 +789,8 @@ AFRAME.registerComponent('ui', {
     var raycaster = this.raycaster = new THREE.Raycaster();
     return function (evt) {
       this.updateRaycaster(raycaster);
-      this.intersectedObjects = raycaster.intersectObjects(this.menuEls, true);
+      this.intersectedObjects.length = 0;
+      this.intersectedObjects.push(...raycaster.intersectObjects(this.menuEls, true));
     };
   })(),
 
@@ -901,13 +896,13 @@ AFRAME.registerComponent('ui', {
   },
 
   updateBrushSelector: function (brush) {
-    var self = this;
-    var buttons = Object.keys(this.brushButtonsMapping);
-    var brushButtonsMapping = this.brushButtonsMapping;
-    buttons.forEach(function (id) {
-      if (brushButtonsMapping[id] !== brush) { return; }
-      self.selectBrushButton(id);
-    });
+    const brushButtonsMapping = this.brushButtonsMapping;
+    for (const id in this.brushButtonsMapping) {
+      if (brushButtonsMapping[id] === brush) {
+        this.selectBrushButton(id);
+        break;
+      }
+    }
   },
 
   onIntersectionCleared: function () {
@@ -964,9 +959,9 @@ AFRAME.registerComponent('ui', {
 
     if (!!this.tooltips && this.isTooltipPaused) {
       this.isTooltipPaused = false;
-      this.tooltips.forEach(function (tooltip) {
+      for (const tooltip of this.tooltips) {
         tooltip.setAttribute('visible', true);
-      });
+      }
     }
     this.playSound('ui_menu');
   },
