@@ -4,12 +4,11 @@ AFRAME.registerComponent('ui', {
     brightness: { default: 1.0, max: 1.0, min: 0.0 },
     opacity: { default: 0 }
   },
-  dependencies: ['ui-raycaster', 'brush'],
+  dependencies: ['brush'],
 
   init: function () {
     var el = this.el;
     var uiEl = this.uiEl = document.createElement('a-entity');
-    var rayEl = this.rayEl = document.createElement('a-entity');
     this.closed = true;
     this.isTooltipPaused = false;
     this.colorStack = ['#272727', '#727272', '#FFFFFF', '#24CAFF', '#249F90', '#F2E646', '#EF2D5E'];
@@ -26,7 +25,6 @@ AFRAME.registerComponent('ui', {
     this.brushRegexp = /^(?!.*(fg|bg)$)brush[0-9]+/;
     this.colorHistoryRegexp = /^(?!.*(fg|bg)$)colorhistory[0-9]+$/;
     this.hsv = { h: 0.0, s: 0.0, v: 1.0 };
-    this.rayAngle = 45;
     this.rayDistance = 0.2;
 
     // The cursor is centered in 0,0 to allow scale it easily
@@ -50,18 +48,16 @@ AFRAME.registerComponent('ui', {
     uiEl.classList.add('apainter-ui');
     el.appendChild(uiEl);
 
-    // Ray entity setup
-    rayEl.setAttribute('line', '');
-
-    //rayEl.setAttribute('visible', false);
-    el.appendChild(rayEl);
-
     // Raycaster setup
-    el.setAttribute('ui-raycaster', {
-      far: this.rayDistance,
+    el.setAttribute('raycaster', {
+      far: 0.2,
       objects: '.apainter-ui',
-      rotation: -this.rayAngle
+      showLine: true,
+      lineColor: '#74BEC1'
     });
+
+    this.ray = this.el.getObject3D('line');
+    this.ray.visible = false;
 
     this.controller = null;
 
@@ -73,22 +69,6 @@ AFRAME.registerComponent('ui', {
       self.controller = {
         name: controllerName,
         hand: evt.detail.component.data.hand
-      }
-
-      if (controllerName === 'oculus-touch-controls') {
-        self.uiEl.setAttribute('rotation', '45 0 0');
-        uiEl.setAttribute('position', '0 0.13 -0.08');
-        self.rayAngle = 0;
-        el.setAttribute('ui-raycaster', {
-          rotation: 0
-        });
-      } else if (controllerName === 'windows-motion-controls') {
-        self.rayAngle = 25;
-        self.rayDistance = 1;
-        el.setAttribute('ui-raycaster', {
-          rotation: -30,
-          far: self.rayDistance
-        });
       }
 
       if (self.el.isPlaying) {
@@ -485,10 +465,10 @@ AFRAME.registerComponent('ui', {
         if (!this.highlightMaterials[object.name]) {
           this.initHighlightMaterial(object);
         }
-        // Update ray
-        this.handRayEl.object3D.worldToLocal(point);
-        this.handRayEl.setAttribute('line', 'end', point);
         object.material = this.highlightMaterials[object.name].hover;
+	// Update ray
+        this.handEl.object3D.worldToLocal(point);
+        this.handEl.setAttribute('line', 'end', point);
       }
       // Pressed Material
       for (const key in pressedObjects) {
@@ -530,10 +510,10 @@ AFRAME.registerComponent('ui', {
     }
 
     el.addEventListener('model-loaded', this.onModelLoaded);
-    el.addEventListener('ui-raycaster-intersection', this.onIntersection);
-    el.addEventListener('ui-raycaster-intersection-cleared', this.onIntersectionCleared);
-    el.addEventListener('ui-raycaster-intersected', this.onIntersected);
-    el.addEventListener('ui-raycaster-intersected-cleared', this.onIntersectedCleared);
+    el.addEventListener('raycaster-intersection', this.onIntersection);
+    el.addEventListener('raycaster-intersection-cleared', this.onIntersectionCleared);
+    el.addEventListener('raycaster-intersected', this.onIntersected);
+    el.addEventListener('raycaster-intersected-cleared', this.onIntersectedCleared);
     if (!handEl) { return; }
     this.addHandListeners();
   },
@@ -546,10 +526,10 @@ AFRAME.registerComponent('ui', {
       this.removeToggleEvent();
     }
 
-    el.removeEventListener('ui-raycaster-intersection', this.onIntersection);
-    el.removeEventListener('ui-raycaster-intersection-cleared', this.onIntersectionCleared);
-    el.removeEventListener('ui-raycaster-intersected', this.onIntersected);
-    el.removeEventListener('ui-raycaster-intersected-cleared', this.onIntersectedCleared);
+    el.removeEventListener('raycaster-intersection', this.onIntersection);
+    el.removeEventListener('raycaster-intersection-cleared', this.onIntersectionCleared);
+    el.removeEventListener('raycaster-intersected', this.onIntersected);
+    el.removeEventListener('raycaster-intersected-cleared', this.onIntersectedCleared);
     if (!handEl) { return; }
     this.removeHandListeners();
   },
@@ -771,7 +751,7 @@ AFRAME.registerComponent('ui', {
     this.uiEl.setAttribute('animation', { dur: 100, easing: 'easeOutExpo', property: 'scale', from: { x: 0, y: 0, z: 0 }, to: { x: 1, y: 1, z: 1 } });
 
     this.el.setAttribute('brush', 'enabled', false);
-    this.rayEl.setAttribute('visible', false);
+    this.ray.visible = false;
     this.closed = false;
 
     if (!!this.tooltips) {
@@ -785,19 +765,18 @@ AFRAME.registerComponent('ui', {
     this.playSound('ui_menu');
   },
 
-  updateIntersections: (function () {
-    var raycaster = this.raycaster = new THREE.Raycaster();
-    return function (evt) {
-      this.updateRaycaster(raycaster);
-      this.intersectedObjects.length = 0;
-      this.intersectedObjects.push(...raycaster.intersectObjects(this.menuEls, true));
-    };
-  })(),
+  updateIntersections: function () {
+    const component = this.handEl.components.raycaster;
+    const raycaster = component.raycaster;
+    component.updateOriginDirection();
+    this.intersectedObjects.length = 0;
+    raycaster.intersectObjects(this.menuEls, true, this.intersectedObjects);
+  },
 
-  onIntersection: function (evt) {
+  onIntersection: function () {
     var visible = this.closed && this.system.opened;
     if (this.el.components.brush.active) { return; }
-    this.rayEl.setAttribute('visible', !!visible);
+    this.ray.visible = visible;
     this.el.setAttribute('brush', 'enabled', false);
   },
 
@@ -808,7 +787,6 @@ AFRAME.registerComponent('ui', {
     // Remove listeners of previous hand
     if (this.handEl) { this.removeHandListeners(); }
     this.handEl = handEl;
-    this.handRayEl = this.handEl.components.ui.rayEl;
     this.menuEls = this.uiEl.object3D.children;
     this.syncUI();
     this.addHandListeners();
@@ -907,11 +885,11 @@ AFRAME.registerComponent('ui', {
 
   onIntersectionCleared: function () {
     this.checkMenuIntersections = false;
-    this.rayEl.setAttribute('visible', false);
+    this.ray.visible = false;
     this.el.setAttribute('brush', 'enabled', true);
   },
 
-  onIntersectedCleared: function (evt) {
+  onIntersectedCleared: function () {
     if (!this.handEl) { return; }
     this.handEl.removeEventListener('triggerchanged', this.onTriggerChanged);
   },
@@ -926,29 +904,6 @@ AFRAME.registerComponent('ui', {
     colorStack.push(color);
     this.syncUI();
   },
-
-  updateRaycaster: (function () {
-    var direction = new THREE.Vector3();
-    var directionHelper = new THREE.Quaternion();
-    var scaleDummy = new THREE.Vector3();
-    var originVec3 = new THREE.Vector3();
-
-    // Closure to make quaternion/vector3 objects private.
-    return function (raycaster) {
-      var object3D = this.handEl.object3D;
-
-      // Update matrix world.
-      object3D.updateMatrixWorld();
-      // Grab the position and rotation.
-      object3D.matrixWorld.decompose(originVec3, directionHelper, scaleDummy);
-      // Apply rotation to a 0, 0, -1 vector.
-      direction.set(0, 0, -1);
-      direction.applyAxisAngle(new THREE.Vector3(1, 0, 0), -(this.rayAngle / 360) * 2 * Math.PI);
-      direction.applyQuaternion(directionHelper);
-      raycaster.far = this.rayDistance;
-      raycaster.set(originVec3, direction);
-    };
-  })(),
 
   close: function () {
     if (this.closed) { return; }

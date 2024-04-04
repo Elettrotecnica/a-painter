@@ -18,7 +18,6 @@ require('./components/brush-tip.js');
 require('./components/json-model.js');
 require('./components/paint-controls.js');
 require('./components/ui.js');
-require('./components/ui-raycaster.js');
 require('./components/logo-model.js');
 
 require('./brushes/line.js');
