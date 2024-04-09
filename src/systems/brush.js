@@ -56,7 +56,8 @@ AFRAME.registerBrush = function (name, definition, options) {
           color: Utils.arrayNumbersToFixed(this.data.color.toArray()),
           size: Utils.numberToFixed(this.data.size),
         },
-        points: points
+        points: points,
+        owner: this.data.owner
       };
     },
     getBinary: function (system) {
@@ -338,7 +339,7 @@ AFRAME.registerSystem('brush', {
 
     return stroke;
   },
-  getJSON: function () {
+  getJSON: function (owner) {
     // Strokes
     var json = {
       version: VERSION,
@@ -346,9 +347,10 @@ AFRAME.registerSystem('brush', {
       author: '',
       brushes: this.getUsedBrushes()
     };
-
-    for (i = 0; i < this.strokes.length; i++) {
-      json.strokes.push(this.strokes[i].getJSON(this));
+    for (const stroke of this.strokes) {
+      if (typeof owner === 'undefined' || stroke.data.owner === owner) {
+	json.strokes.push(stroke.getJSON(this));
+      }
     }
 
     return json;
@@ -423,8 +425,6 @@ AFRAME.registerSystem('brush', {
 
     console.time('JSON Loading');
 
-    var usedBrushes = [];
-
     for (var i = 0; i < data.strokes.length; i++) {
       var strokeData = data.strokes[i];
       var brush = strokeData.brush;
@@ -432,7 +432,8 @@ AFRAME.registerSystem('brush', {
       var stroke = this.addNewStroke(
         data.brushes[brush.index],
         new THREE.Color().fromArray(brush.color),
-        brush.size
+        brush.size,
+        strokeData.owner
       );
 
       for (var j = 0; j < strokeData.points.length; j++) {
