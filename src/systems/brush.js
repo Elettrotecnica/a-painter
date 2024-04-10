@@ -186,22 +186,30 @@ AFRAME.registerSystem('brush', {
     }
   },
   clear: function (owner) {
-    // Remove all the stroke entities
-    owner = owner || 'local';
-    for (var i = this.strokes.length - 1; i >= 0; i--) {
-      if(this.strokes[i].data.owner !== owner) continue;
-      var stroke = this.strokes[i];
-      stroke.undo();
-      var drawing = document.querySelector('.a-drawing');
-      drawing.emit('stroke-removed', { stroke: stroke });
-    }
-
     // Reset the used brushes
     for (const name in AFRAME.BRUSHES) {
       AFRAME.BRUSHES[name].used = false;
     }
 
-    this.strokes.length = 0;
+    const drawing = document.querySelector('.a-drawing');
+
+    // Remove all the stroke entities by this owner
+    owner = owner || 'local';
+    for (var i = this.strokes.length - 1; i >= 0; i--) {
+      const stroke = this.strokes[i];
+      if (stroke.data.owner === owner) {
+	// Stroke belongs to the owner. Remove it from the system
+	// strokes, delete it from the scene, then notify about the
+	// deletion.
+        this.strokes.splice(i, 1);
+        stroke.undo();
+	drawing.emit('stroke-removed', { stroke: stroke });
+      } else {
+	// Stroke belongs to somebody else and won't be deleted. Its
+	// brush is also still in use.
+	AFRAME.BRUSHES[stroke.brush.prototype.brushName].used = true;
+      }
+    }
   },
   init: function () {
     this.version = VERSION;
