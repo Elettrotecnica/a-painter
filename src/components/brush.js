@@ -31,14 +31,19 @@ AFRAME.registerComponent('brush', {
     this.onUndo = this.onUndo.bind(this);
     this.onPaint = this.onPaint.bind(this);
 
-    this.el.addEventListener('undo', this.onUndo);
-    this.el.addEventListener('paint', this.onPaint);
-
     if (this.data.hand === '') {
       this.hand = this.el.id.endsWith('right-hand') ? 'right' : 'left';
     } else {
       this.hand = this.data.hand;
     }
+  },
+  play: function () {
+    this.el.addEventListener('undo', this.onUndo);
+    this.el.addEventListener('paint', this.onPaint);
+  },
+  pause: function () {
+    this.el.removeEventListener('undo', this.onUndo);
+    this.el.removeEventListener('paint', this.onPaint);
   },
   update: function (oldData) {
     var data = this.data;
