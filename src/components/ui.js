@@ -526,6 +526,8 @@ AFRAME.registerComponent('ui', {
       this.removeToggleEvent();
     }
 
+    this.ray.visible = false;
+
     el.removeEventListener('raycaster-intersection', this.onIntersection);
     el.removeEventListener('raycaster-intersection-cleared', this.onIntersectionCleared);
     el.removeEventListener('raycaster-intersected', this.onIntersected);
