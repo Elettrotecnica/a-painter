@@ -90,6 +90,8 @@ AFRAME.registerComponent('paint-controls', {
     this.onBrushColorChanged = this.onBrushColorChanged.bind(this);
     this.onStrokeStarted = this.onStrokeStarted.bind(this);
 
+    this.el.addEventListener('model-loaded', this.onModelLoaded);
+
     if (this.data.controller !== 'auto') {
       this.setController(this.data.controller, this.data.hand);
     }
@@ -110,7 +112,6 @@ AFRAME.registerComponent('paint-controls', {
     this.brushTip.setAttribute('brush-tip', {
       hand: hand, controller: controllerName, model: this.tipModel
     });
-    this.brushTip.addEventListener('model-loaded', this.onModelLoaded);
     this.el.appendChild(this.brushTip);
   },
 
@@ -144,7 +145,12 @@ AFRAME.registerComponent('paint-controls', {
     button4: 'system'
   },
 
-  update: function () {
+  update: function (oldData) {
+    // Bump the controller model visibility.
+    this.setModelVisibility();
+
+    if (oldData.hand === this.data.hand) { return; }
+
     const controlConfiguration = {
       hand: this.data.hand,
       model: true
@@ -159,7 +165,6 @@ AFRAME.registerComponent('paint-controls', {
   },
 
   addEventListeners: function () {
-    this.el.addEventListener('model-loaded', this.onModelLoaded);
     this.el.addEventListener('changeBrushSizeAbs', this.onChangeBrushSizeAbs);
     this.el.addEventListener('changeBrushSizeInc', this.onChangeBrushSizeInc);
     this.el.addEventListener('startChangeBrushSize', this.onStartChangeBrushSize);
@@ -170,7 +175,6 @@ AFRAME.registerComponent('paint-controls', {
   },
 
   removeEventListeners: function () {
-    this.el.removeEventListener('model-loaded', this.onModelLoaded);
     this.el.removeEventListener('changeBrushSizeAbs', this.onChangeBrushSizeAbs);
     this.el.removeEventListener('changeBrushSizeInc', this.onChangeBrushSizeInc);
     this.el.removeEventListener('startChangeBrushSize', this.onStartChangeBrushSize);
@@ -181,10 +185,9 @@ AFRAME.registerComponent('paint-controls', {
   },
 
   setModelVisibility: function () {
-    const visible = this.isPlaying ? !this.data.hideController : this.data.hideController;
-    this.controllerModel = this.el.getObject3D('mesh');
-    if (this.controllerModel) {
-      this.controllerModel.visible = visible;
+    const controllerModel = this.el.getObject3D('mesh');
+    if (controllerModel) {
+      controllerModel.visible = !this.data.hideController;
     }
   },
 
@@ -202,24 +205,15 @@ AFRAME.registerComponent('paint-controls', {
 
   play: function () {
     this.addEventListeners();
-    this.isPlaying = true;
-    this.setModelVisibility();
-    this.el.components.brush.data.enabled = true;
   },
 
   pause: function () {
     this.removeEventListeners();
-    this.isPlaying = false;
-    this.setModelVisibility();
-    this.el.components.brush.data.enabled = false;
   },
 
   onModelLoaded: function (evt) {
-    if (!this.controllerModel) {
-      // If the controller model is loaded after our initialization,
-      // set its visibility now.
-      this.setModelVisibility();
-    }
+    // Bump the controller model visibility in case it was loaded.
+    this.setModelVisibility();
 
     // Only act on lone brush tip or custom model to set the button meshes, ignore anything else.
     if ((evt.target !== this.el && !evt.target.id.includes('-tip')) || this.buttonMeshes) { return; }
