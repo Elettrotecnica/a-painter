@@ -66,6 +66,10 @@ AFRAME.registerComponent('paint-controls', {
     hideController: {
       type: 'boolean',
       default: false
+    },
+    hideTip: {
+      type: 'boolean',
+      default: false
     }
   },
 
@@ -188,6 +192,9 @@ AFRAME.registerComponent('paint-controls', {
     const controllerModel = this.el.getObject3D('mesh');
     if (controllerModel) {
       controllerModel.visible = !this.data.hideController;
+    }
+    if (this.brushTip) {
+      this.brushTip.object3D.visible = !this.data.hideTip;
     }
   },
 
