@@ -95,6 +95,7 @@ AFRAME.registerComponent('paint-controls', {
     this.onStrokeStarted = this.onStrokeStarted.bind(this);
 
     this.el.addEventListener('model-loaded', this.onModelLoaded);
+    this.el.addEventListener('controllerconnected', this.onControllerconnected);
 
     if (this.data.controller !== 'auto') {
       this.setController(this.data.controller, this.data.hand);
@@ -172,7 +173,6 @@ AFRAME.registerComponent('paint-controls', {
     this.el.addEventListener('changeBrushSizeAbs', this.onChangeBrushSizeAbs);
     this.el.addEventListener('changeBrushSizeInc', this.onChangeBrushSizeInc);
     this.el.addEventListener('startChangeBrushSize', this.onStartChangeBrushSize);
-    this.el.addEventListener('controllerconnected', this.onControllerconnected);
     this.el.addEventListener('brushsize-changed', this.onBrushSizeChanged);
     this.el.addEventListener('brushcolor-changed', this.onBrushColorChanged);
     document.addEventListener('stroke-started', this.onStrokeStarted);
@@ -182,7 +182,6 @@ AFRAME.registerComponent('paint-controls', {
     this.el.removeEventListener('changeBrushSizeAbs', this.onChangeBrushSizeAbs);
     this.el.removeEventListener('changeBrushSizeInc', this.onChangeBrushSizeInc);
     this.el.removeEventListener('startChangeBrushSize', this.onStartChangeBrushSize);
-    this.el.removeEventListener('controllerconnected', this.onControllerconnected);
     this.el.removeEventListener('brushsize-changed', this.onBrushSizeChanged);
     this.el.removeEventListener('brushcolor-changed', this.onBrushColorChanged);
     document.removeEventListener('stroke-started', this.onStrokeStarted);
@@ -222,21 +221,22 @@ AFRAME.registerComponent('paint-controls', {
     // Bump the controller model visibility in case it was loaded.
     this.setModelVisibility();
 
-    // Only act on lone brush tip or custom model to set the button meshes, ignore anything else.
-    if ((evt.target !== this.el && !evt.target.id.includes('-tip')) || this.buttonMeshes) { return; }
+    // Only act to set the button meshes, ignore anything else.
+    if (this.buttonMeshes) { return; }
 
+    // See whether the model looks like a brush tip.
     var controllerObject3D = evt.detail.model;
-    var buttonMeshes;
 
-    buttonMeshes = this.buttonMeshes = {};
-
-    buttonMeshes.sizeHint = controllerObject3D.getObjectByName('sizehint');
-    buttonMeshes.colorTip = controllerObject3D.getObjectByName('tip');
-
-    this.modelLoaded = true;
-
-    this.changeBrushSize(this.el.components.brush.data.size);
-    this.changeBrushColor(this.el.components.brush.color);
+    const buttonMeshes = {
+      sizeHint: controllerObject3D.getObjectByName('sizehint'),
+      colorTip: controllerObject3D.getObjectByName('tip')
+    };
+    if (!!buttonMeshes.sizeHint && !!buttonMeshes.colorTip) {
+      this.buttonMeshes = buttonMeshes;
+      this.modelLoaded = true;
+      this.changeBrushSize(this.el.components.brush.data.size);
+      this.changeBrushColor(this.el.components.brush.color);
+    }
   },
 
   onChangeBrushSizeAbs: function (evt) {
