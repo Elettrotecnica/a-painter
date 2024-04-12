@@ -71,7 +71,7 @@ AFRAME.registerComponent('ui', {
         hand: evt.detail.component.data.hand
       }
 
-      if (self.el.isPlaying) {
+      if (self.isPlaying) {
         self.addToggleEvent();
       }
 
